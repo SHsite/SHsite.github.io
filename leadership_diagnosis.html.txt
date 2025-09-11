@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리더십 자기 진단</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #result-page .bg-white, #result-page .bg-white * {
+                visibility: visible;
+            }
+            #result-page .bg-white {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+                border: none;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="survey-page" class="container mx-auto p-4 sm:p-8 max-w-4xl">
+        <div class="bg-white p-6 sm:p-10 rounded-2xl shadow-lg">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">리더십 자기 진단</h1>
+                <p class="text-gray-600 mt-2">본 진단은 리더 본인의 리더십 수준을 스스로 점검하고 강점과 약점을 파악하기 위한 것입니다.<br>각 문항을 신중하게 읽고, 현재 자신의 모습과 가장 가깝다고 생각하는 곳에 솔직하게 응답해주시기 바랍니다.</p>
+            </div>
+
+            <form id="diagnosis-form">
+                <!-- 문항이 여기에 동적으로 추가됩니다 -->
+            </form>
+
+            <div class="mt-10 text-center">
+                <button type="button" id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300">
+                    진단 완료
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-page" class="container mx-auto p-4 sm:p-8 max-w-5xl hidden">
+        <div class="bg-white p-6 sm:p-10 rounded-2xl shadow-lg">
+            <div class="text-center sm:text-left mb-6 border-b pb-4">
+                <h1 class="text-3xl font-bold text-gray-900">리더십 진단 결과</h1>
+            </div>
+            
+            <!-- 상단: 방사형 차트 & 대분류 순위 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-gray-50 p-6 rounded-xl shadow-sm">
+                    <h2 class="text-xl font-semibold text-center mb-4">리더십 역량 프로필 (12개 세부요인)</h2>
+                    <canvas id="radar-chart"></canvas>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl shadow-sm">
+                    <h2 class="text-xl font-semibold text-center mb-4">리더십 대분류별 강점 순위</h2>
+                    <div id="category-ranking" class="space-y-4 pt-4">
+                        <!-- 순위가 여기에 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 중단: 막대 그래프 -->
+            <div class="bg-gray-50 p-6 rounded-xl shadow-sm mb-8">
+                <h2 class="text-xl font-semibold text-center mb-4">12개 세부요인별 상세 점수</h2>
+                <canvas id="bar-chart" style="max-height: 400px;"></canvas>
+            </div>
+
+            <!-- 하단: 강점 및 약점 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-green-50 border border-green-200 p-6 rounded-xl">
+                    <h2 class="text-xl font-semibold text-green-800 mb-4">TOP 3 강점 요인</h2>
+                    <ul id="strengths-list" class="list-disc list-inside space-y-2 text-gray-700">
+                        <!-- 강점이 여기에 동적으로 추가됩니다 -->
+                    </ul>
+                </div>
+                <div class="bg-red-50 border border-red-200 p-6 rounded-xl">
+                    <h2 class="text-xl font-semibold text-red-800 mb-4">TOP 3 보완/개선 요인</h2>
+                    <ul id="weaknesses-list" class="list-disc list-inside space-y-2 text-gray-700">
+                        <!-- 약점이 여기에 동적으로 추가됩니다 -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 하단 버튼 -->
+            <div id="result-buttons" class="mt-10 pt-6 border-t text-center sm:flex sm:justify-center sm:space-x-4 space-y-4 sm:space-y-0">
+                <button id="save-pdf-btn" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300 w-full sm:w-auto">
+                    결과 저장하기 (PDF)
+                </button>
+                <button id="retry-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300 w-full sm:w-auto">
+                    다시 진단하기
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="text-center py-6 text-gray-500 text-sm">
+        Learn2Consulting All rights reserved
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const questions = [
+                { "category": "혁신 기반 비즈니스 기회 창출", "factor": "a. 외부환경/가치사슬 사고", "text": "나는 나의 '업(業)'을 둘러싼 거시 환경과 최신 동향을 다양한 채널을 통해 민첩하게 파악합니다." },
+                { "category": "혁신 기반 비즈니스 기회 창출", "factor": "a. 외부환경/가치사슬 사고", "text": "나는 복잡하고 거대한 외부 정보를 빠르게 나의 '업(業)'에 맞게 재해석하고 선제적으로 대응합니다." },
+                { "category": "혁신 기반 비즈니스 기회 창출", "factor": "a. 외부환경/가치사슬 사고", "text": "나는 담당 조직 및 구성원들에게 새로운 관점(View)와 사업 아이디어(Insight)를 제시하고 전파합니다." },
+                { "category": "혁신 기반 비즈니스 기회 창출", "factor": "b. 팀 비전/혁신 방향수립", "text": "나는 주어진 과제 달성에 만족하지 않고 새로운 기회를 모색합니다." },
+                { "category": "혁신 기반 비즈니스 기회 창출", "factor": "b. 팀 비전/혁신 방향수립", "text": "나는 담당 팀의 미래 모습 또는 혁신 방향을 명확히 제시합니다." },
+                { "category": "혁신 기반 비즈니스 기회 창출", "factor": "b. 팀 비전/혁신 방향수립", "text": "나는 팀 구성원들이 변화를 실제로 추진할 수 있도록 과제를 구체화합니다." },
+                { "category": "혁신 기반 비즈니스 기회 창출", "factor": "c. 공감대/공유/환경대응력", "text": "나는 담당 팀의 비전과 전략을 생생한 Story로 지속적으로 공유합니다." },
+                { "category": "혁신 기반 비즈니스 기회 창출", "factor": "c. 공감대/공유/환경대응력", "text": "나는 구성원들로부터 적극적인 공감과 '할 수 있다'는 자신감을 유도합니다." },
+                { "category": "혁신 기반 비즈니스 기회 창출", "factor": "c. 공감대/공유/환경대응력", "text": "나는 비전과 목표 달성에 대한 팀 구성원들의 목적 의식을 고취합니다." },
+                { "category": "목표 달성을 위한 전략적 실행 역량", "factor": "d. 책임 있는 결과 도출", "text": "나는 주어진 과제 달성에 만족하지 않고 자발적으로 최고(SUPEX)수준의 목표를 설정합니다." },
+                { "category": "목표 달성을 위한 전략적 실행 역량", "factor": "d. 책임 있는 결과 도출", "text": "나는 예상치 못한 장애나 한계에 부딪히더라도 끈기있게 극복합니다." },
+                { "category": "목표 달성을 위한 전략적 실행 역량", "factor": "d. 책임 있는 결과 도출", "text": "나는 목표를 집요하게 관리/지원하여 기대 이상의 성과를 달성합니다." },
+                { "category": "목표 달성을 위한 전략적 실행 역량", "factor": "e. 내/외부 긴밀한 협업", "text": "나는 팀내 구성원 상호 간 긴밀하게 협력하도록 촉진합니다." },
+                { "category": "목표 달성을 위한 전략적 실행 역량", "factor": "e. 내/외부 긴밀한 협업", "text": "나는 그룹/팀간 이기주의를 타파하고 회사 전체 목표 달성을 위해, 타 부서들과 다차원적으로 협업합니다." },
+                { "category": "목표 달성을 위한 전략적 실행 역량", "factor": "e. 내/외부 긴밀한 협업", "text": "나는 외부 이해관계자 또는 파트너와 우호적인 관계를 형성합니다." },
+                { "category": "목표 달성을 위한 전략적 실행 역량", "factor": "f. 신속한 실행 및 돌파", "text": "나는 문제 해결에 필요한 핵심 정보를 다각적/입체적으로 파악합니다." },
+                { "category": "목표 달성을 위한 전략적 실행 역량", "factor": "f. 신속한 실행 및 돌파", "text": "나는 당면한 상황이나 정보의 모호함 속에서도 구성원과 함께 해결 대안들을 신속하게 도출합니다." },
+                { "category": "목표 달성을 위한 전략적 실행 역량", "factor": "f. 신속한 실행 및 돌파", "text": "나는 실행이 지연되지 않도록 빠르고 단호하게 의사결정합니다." },
+                { "category": "성장 조직 풍토 구현", "factor": "g. 인재 육성 및 코칭", "text": "나는 구성원 역량개발을 위해 도전적인 미션을 부여하며 일을 통한 성장을 촉진합니다." },
+                { "category": "성장 조직 풍토 구현", "factor": "g. 인재 육성 및 코칭", "text": "나는 구성원 역량개발을 위해 내/외부 교육, 세미나, 학습 자료 등을 적극적으로 지원합니다." },
+                { "category": "성장 조직 풍토 구현", "factor": "g. 인재 육성 및 코칭", "text": "나는 구성원들의 역량 수준을 파악하고 각 구성원에게 필요한 코칭과 지도를 통해 구성원의 성장을 지원합니다." },
+                { "category": "성장 조직 풍토 구현", "factor": "h. 도전과 혁신 독려", "text": "나는 구성원들이 항상 최상의 수준을 열망하고, 스스로 높은 목표에 도전하도록 독려합니다." },
+                { "category": "성장 조직 풍토 구현", "factor": "h. 도전과 혁신 독려", "text": "나는 구성원들이 기존 업무 또는 당면한 문제를 새로운 관점으로 볼 수 있도록 유도합니다." },
+                { "category": "성장 조직 풍토 구현", "factor": "h. 도전과 혁신 독려", "text": "나는 실패의 위험이 있더라도, 혁신적 아이디어를 적극 시도해 보도록 독려합니다." },
+                { "category": "성장 조직 풍토 구현", "factor": "i. 개방적 팀분위기 조성", "text": "나는 구성원들이 긍정적/리더와 다른 의견을 자유롭게 개진할 수 있도록 분위기를 조성합니다." },
+                { "category": "성장 조직 풍토 구현", "factor": "i. 개방적 팀분위기 조성", "text": "나는 조직 내에서 업무 관련 정보가 적시에 공유될 수 있도록 합니다." },
+                { "category": "성장 조직 풍토 구현", "factor": "i. 개방적 팀분위기 조성", "text": "나는 환경 변화에 따라 신속하고 유연하게 조직을 운영합니다." },
+                { "category": "소통과 신뢰 기반 리더십", "factor": "j. 리더십 Values", "text": "나는 회사에 대한 자부심과 애정을 바탕으로 조직의 장기적 성장과 발전을 위해 노력합니다." },
+                { "category": "소통과 신뢰 기반 리더십", "factor": "j. 리더십 Values", "text": "나는 업무 수행시 기본 지키기, 윤리경영 실천에 앞장섭니다." },
+                { "category": "소통과 신뢰 기반 리더십", "factor": "j. 리더십 Values", "text": "나는 업무 수행 시 사적인 감정이나 친분관계를 배제하고 공정투명하게 업무를 수행합니다." },
+                { "category": "소통과 신뢰 기반 리더십", "factor": "k. 역할배분 및 성과지원", "text": "나는 자기주도적으로 자기계발을 점검하고 필요한 역량을 개발하기 위해 끊임없이 노력합니다." },
+                { "category": "소통과 신뢰 기반 리더십", "factor": "k. 역할배분 및 성과지원", "text": "나는 구성원들에게 실질적인 책임을 부여하고, 스스로의 일을 통제할 수 있도록 불필요한 개입을 하지 않습니다." },
+                { "category": "소통과 신뢰 기반 리더십", "factor": "k. 역할배분 및 성과지원", "text": "나는 각 구성원의 업무수행 결과에 대해 사실을 기반으로 공정하게 평가하고 충분한 피드백을 제공합니다." },
+                { "category": "소통과 신뢰 기반 리더십", "factor": "l. 소통 및 문제해결", "text": "나는 본인의 의견만 제시하는 것이 아니라, 다양성을 인정하고 타인의 의견을 경청하여 건설적 협의를 주도합니다." },
+                { "category": "소통과 신뢰 기반 리더십", "factor": "l. 소통 및 문제해결", "text": "나는 팀 내 구성원 역할 차이와 이해관계를 충분히 이해하고 있고 갈등 발생 시 이를 원만하게 중재하고 협력을 이끌어 냅니다." },
+                { "category": "소통과 신뢰 기반 리더십", "factor": "l. 소통 및 문제해결", "text": "나는 업무 수행 중 갑작스러운 돌발 상황에도 문제의 본질을 정확히 파악하고 대안을 신속히 제시하고 문제를 해결합니다." }
+            ];
+
+            const form = document.getElementById('diagnosis-form');
+
+            questions.forEach((q, index) => {
+                const questionBlock = document.createElement('div');
+                questionBlock.className = 'mb-6 p-4 bg-gray-50 rounded-lg';
+                
+                const questionText = document.createElement('p');
+                questionText.className = 'font-semibold mb-3';
+                questionText.textContent = `${index + 1}. ${q.text}`;
+                questionBlock.appendChild(questionText);
+
+                const radioGroup = document.createElement('div');
+                radioGroup.className = 'flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:gap-x-4 text-xs sm:text-sm';
+                
+                const labels = ['전혀 그렇지 않다', '그렇지 않다', '보통이다', '그렇다', '매우 그렇다'];
+                
+                radioGroup.innerHTML += `<span class='text-gray-600 px-2 text-center'>${labels[0]}</span>`;
+                const radioButtons = document.createElement('div');
+                radioButtons.className = 'flex items-center justify-center space-x-2 sm:space-x-4';
+                for (let i = 1; i <= 5; i++) {
+                    radioButtons.innerHTML += `
+                        <label for="q${index}_${i}" class="flex flex-col items-center cursor-pointer p-1">
+                            <input type="radio" id="q${index}_${i}" name="q${index}" value="${i}" class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300" required>
+                            <span class="mt-1">${i}</span>
+                        </label>
+                    `;
+                }
+                radioGroup.appendChild(radioButtons);
+                radioGroup.innerHTML += `<span class='text-gray-600 px-2 text-center'>${labels[4]}</span>`;
+
+                questionBlock.appendChild(radioGroup);
+                form.appendChild(questionBlock);
+            });
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.addEventListener('click', () => {
+                if (form.checkValidity()) {
+                    calculateResults();
+                } else {
+                    alert('모든 문항에 응답해주세요.');
+                    form.reportValidity();
+                }
+            });
+            
+            let radarChartInstance, barChartInstance;
+
+            function calculateResults() {
+                const formData = new FormData(form);
+                const scores = [];
+                for (let i = 0; i < questions.length; i++) {
+                    scores.push(parseInt(formData.get(`q${i}`)));
+                }
+
+                const factorScores = {};
+                questions.forEach((q, index) => {
+                    if (!factorScores[q.factor]) {
+                        factorScores[q.factor] = { sum: 0, count: 0, category: q.category };
+                    }
+                    factorScores[q.factor].sum += scores[index];
+                    factorScores[q.factor].count++;
+                });
+                
+                const factorAverages = Object.entries(factorScores).map(([factor, data]) => ({
+                    factor: factor,
+                    score: data.sum / data.count,
+                    category: data.category
+                }));
+
+                const categoryScores = {};
+                factorAverages.forEach(fa => {
+                    if(!categoryScores[fa.category]) {
+                        categoryScores[fa.category] = { sum: 0, count: 0 };
+                    }
+                    categoryScores[fa.category].sum += fa.score;
+                    categoryScores[fa.category].count++;
+                });
+
+                const categoryAverages = Object.entries(categoryScores).map(([category, data]) => ({
+                    category: category,
+                    score: data.sum / data.count
+                }));
+                
+                categoryAverages.sort((a, b) => b.score - a.score);
+                const sortedFactorAverages = [...factorAverages].sort((a, b) => b.score - a.score);
+
+                const strengths = sortedFactorAverages.slice(0, 3);
+                const weaknesses = sortedFactorAverages.slice(-3).reverse();
+
+                displayResults(factorAverages, categoryAverages, strengths, weaknesses);
+            }
+
+            function displayResults(factorAvgs, categoryAvgs, strengths, weaknesses) {
+                document.getElementById('survey-page').classList.add('hidden');
+                document.getElementById('result-page').classList.remove('hidden');
+                window.scrollTo(0, 0);
+
+                // Reorder factorAvgs to original order for charts
+                const originalFactorOrder = [...new Set(questions.map(q => q.factor))];
+                const sortedFactorAvgsForChart = originalFactorOrder.map(factorName => 
+                    factorAvgs.find(f => f.factor === factorName)
+                );
+                
+                const factorLabels = sortedFactorAvgsForChart.map(f => f.factor.split('. ')[1]);
+                const factorData = sortedFactorAvgsForChart.map(f => f.score.toFixed(2));
+
+                // 1. 방사형 차트
+                const radarCtx = document.getElementById('radar-chart').getContext('2d');
+                if (radarChartInstance) radarChartInstance.destroy();
+                radarChartInstance = new Chart(radarCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: factorLabels,
+                        datasets: [{
+                            label: '역량 점수',
+                            data: factorData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            r: { beginAtZero: true, max: 5, min: 0, ticks: { stepSize: 1 } }
+                        },
+                        plugins: { legend: { display: false } },
+                        maintainAspectRatio: true,
+                    }
+                });
+
+                // 2. 대분류 순위
+                const rankingContainer = document.getElementById('category-ranking');
+                rankingContainer.innerHTML = '';
+                const rankEmojis = ['🥇', '🥈', '🥉', ''];
+                categoryAvgs.forEach((cat, index) => {
+                    const rankItem = document.createElement('div');
+                    rankItem.className = 'flex items-center p-3 rounded-lg shadow-inner';
+                    rankItem.innerHTML = `
+                        <span class="text-2xl w-10 text-center">${rankEmojis[index] || index + 1}</span>
+                        <div class="flex-grow">
+                            <span class="font-semibold text-lg">${cat.category}</span>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1">
+                                <div class="bg-blue-500 h-2.5 rounded-full" style="width: ${cat.score/5*100}%"></div>
+                            </div>
+                        </div>
+                        <span class="font-bold text-xl ml-4 w-12 text-right">${cat.score.toFixed(2)}</span>
+                    `;
+                    rankingContainer.appendChild(rankItem);
+                });
+
+                // 3. 막대 그래프
+                const barCtx = document.getElementById('bar-chart').getContext('2d');
+                if (barChartInstance) barChartInstance.destroy();
+                barChartInstance = new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: factorLabels,
+                        datasets: [{
+                            label: '세부요인 점수',
+                            data: factorData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        scales: { x: { beginAtZero: true, max: 5 } },
+                        plugins: { legend: { display: false } },
+                        maintainAspectRatio: false,
+                    }
+                });
+
+                // 4. 강점 및 약점
+                const strengthsContainer = document.getElementById('strengths-list');
+                strengthsContainer.innerHTML = '';
+                strengths.forEach(s => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<span class="font-semibold">${s.factor.split('. ')[1]}</span> - <span class="text-gray-600">평균 ${s.score.toFixed(2)}점</span>`;
+                    strengthsContainer.appendChild(listItem);
+                });
+
+                const weaknessesContainer = document.getElementById('weaknesses-list');
+                weaknessesContainer.innerHTML = '';
+                weaknesses.forEach(w => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<span class="font-semibold">${w.factor.split('. ')[1]}</span> - <span class="text-gray-600">평균 ${w.score.toFixed(2)}점</span>`;
+                    weaknessesContainer.appendChild(listItem);
+                });
+            }
+            
+            document.getElementById('retry-btn').addEventListener('click', () => {
+                 document.getElementById('result-page').classList.add('hidden');
+                 document.getElementById('survey-page').classList.remove('hidden');
+                 form.reset();
+                 window.scrollTo(0, 0);
+            });
+            
+            document.getElementById('save-pdf-btn').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const reportElement = document.querySelector("#result-page > .bg-white");
+                const buttonsElement = document.getElementById('result-buttons');
+                
+                buttonsElement.style.visibility = 'hidden';
+
+                html2canvas(reportElement, { scale: 2, useCORS: true }).then(canvas => {
+                    try {
+                        const imgData = canvas.toDataURL('image/png', 1.0);
+                        const pdf = new jsPDF('p', 'mm', 'a4');
+                        const pageHeight = pdf.internal.pageSize.getHeight();
+                        const pageWidth = pdf.internal.pageSize.getWidth();
+                        const imgHeight = canvas.height * pageWidth / canvas.width;
+                        let heightLeft = imgHeight;
+                        let position = 0;
+
+                        pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+                        heightLeft -= pageHeight;
+
+                        while (heightLeft > 0) {
+                          position -= pageHeight;
+                          pdf.addPage();
+                          pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+                          heightLeft -= pageHeight;
+                        }
+                        pdf.save('리더십_진단_결과.pdf');
+                    } catch (e) {
+                        console.error("PDF 생성 중 오류:", e);
+                        alert('PDF를 저장하는 중 오류가 발생했습니다.');
+                    } finally {
+                        buttonsElement.style.visibility = 'visible';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
